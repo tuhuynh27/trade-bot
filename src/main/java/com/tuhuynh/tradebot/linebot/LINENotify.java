@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 public class LINENotify {
     @SneakyThrows
     public static void sendNotify(String msg) {
+        log.info("LINE Notify: " + msg);
         HttpClient httpClient = HttpClient.newBuilder()
                                           .version(Version.HTTP_1_1)
                                           .connectTimeout(Duration.ofSeconds(10))

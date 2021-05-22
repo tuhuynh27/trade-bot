@@ -104,7 +104,6 @@ public class WatcherSession implements Runnable {
                 if (diffs > (threshold / 10) || diffs < -(threshold / 10)) {
                     String percentage = (diffs > 0 ? "+" : "-") + threshold + "%";
                     String msg = currency + " has just modified " + percentage + ", current price is " + price;
-                    log.info(msg);
                     LINENotify.sendNotify(msg);
                     diffs = 0;
                 }

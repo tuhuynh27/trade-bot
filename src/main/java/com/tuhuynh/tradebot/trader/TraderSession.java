@@ -119,7 +119,6 @@ public class TraderSession implements Runnable {
                         diffs = 0;
 
                         String msg = "Take profit activated for " + currency;
-                        log.info(msg);
                         LINENotify.sendNotify(msg);
                     }
 
@@ -129,7 +128,6 @@ public class TraderSession implements Runnable {
                         diffs = 0;
 
                         String msg = "Stop loss activated for " + currency;
-                        log.info(msg);
                         LINENotify.sendNotify(msg);
                     }
                 } else {
@@ -141,7 +139,6 @@ public class TraderSession implements Runnable {
                             diffs = 0;
 
                             String msg = currency + " has up +" + startToBuy + "% after the dip time, it's time to buy";
-                            log.info(msg);
                             LINENotify.sendNotify(msg);
                         }
 
@@ -151,7 +148,6 @@ public class TraderSession implements Runnable {
                             diffs = 0;
 
                             String msg = currency + " has still down more -" + denyDip + "%, close trading time";
-                            log.info(msg);
                             LINENotify.sendNotify(msg);
                         }
                     } else {
@@ -161,7 +157,6 @@ public class TraderSession implements Runnable {
                             diffs = 0;
 
                             String msg = currency + " has down -" + dipThreshold + "%, it's trading time";
-                            log.info(msg);
                             LINENotify.sendNotify(msg);
                         }
                     }
@@ -175,7 +170,6 @@ public class TraderSession implements Runnable {
         dollarBalance = 0;
         isHolding = true;
         String msg = "Paid " + coinBalance + "at price " + price;
-        log.info(msg);
         LINENotify.sendNotify(msg);
     }
 
@@ -184,7 +178,6 @@ public class TraderSession implements Runnable {
         coinBalance = 0;
         isHolding = false;
         String msg = "Sold " + coinBalance + "at price " + price + ", balance is " + dollarBalance;
-        log.info(msg);
         LINENotify.sendNotify(msg);
     }
 
