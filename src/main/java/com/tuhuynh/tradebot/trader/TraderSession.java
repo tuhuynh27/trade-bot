@@ -14,6 +14,7 @@ import com.tuhuynh.tradebot.entities.binance.AggTradeStreamMsg;
 import com.tuhuynh.tradebot.factory.AppFactory;
 import com.tuhuynh.tradebot.linebot.LINENotify;
 
+import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -32,19 +33,16 @@ public class TraderSession implements Runnable {
     // Trade Vars
     private boolean isTradeTime = false;
     private boolean isHolding = false;
-    private double dollarBalance = 1000;
+    private double dollarBalance;
     private double coinBalance = 0;
 
     // Metrics
-    private final double dipDownThreshold = 0.1D;
-    private final double dipUpThreshold = 0.1D;
-    private final double denyDipDown = 0.1D;
-    private final double startToBuy = 0.05D;
-    private final double stopLoss = 0.1D;
-    private final double takeProfit = 0.5D;
+    private final TradeConfig tradeConfig;
 
-    public TraderSession(String currency) {
+    public TraderSession(String currency, double balance, TradeConfig tradeConfig) {
         this.currency = currency;
+        this.dollarBalance = balance;
+        this.tradeConfig = tradeConfig;
     }
 
     @Override
@@ -115,57 +113,56 @@ public class TraderSession implements Runnable {
 
                 if (isHolding) {
                     // If up 5%
-                    if (diffs > (takeProfit / 10)) {
-                        sellAll(price);
-                        diffs = 0;
-
+                    if (diffs > (tradeConfig.takeProfit / 10)) {
                         String msg = "Take profit activated for " + currency;
                         LINENotify.sendNotify(msg);
+
+                        sellAll(price);
+                        diffs = 0;
                     }
 
                     // If down 1%
-                    if (diffs < -(stopLoss / 10)) {
-                        sellAll(price);
-                        diffs = 0;
-
+                    if (diffs < -(tradeConfig.stopLoss / 10)) {
                         String msg = "Stop loss activated for " + currency;
                         LINENotify.sendNotify(msg);
-                    }
 
+                        sellAll(price);
+                        diffs = 0;
+                    }
                 } else {
                     if (isTradeTime) {
                         // If up 2%
-                        if (diffs > (startToBuy / 10)) {
+                        if (diffs > (tradeConfig.startToBuy / 10)) {
                             buyAll(price);
                             isTradeTime = false;
                             diffs = 0;
                         }
 
                         // If still down 2%
-                        if (diffs < -(denyDipDown / 10)) {
+                        if (diffs < -(tradeConfig.denyDipDown / 10)) {
                             isTradeTime = false;
                             diffs = 0;
 
-                            String msg = currency + " has still down more -" + denyDipDown
+                            String msg = currency + " has still down more -" + tradeConfig.denyDipDown
                                          + "%, close trading time";
                             LINENotify.sendNotify(msg);
                         }
                     } else {
                         // If down 5%
-                        if (diffs < -(dipDownThreshold / 10)) {
+                        if (diffs < -(tradeConfig.dipDownThreshold / 10)) {
                             isTradeTime = true;
                             diffs = 0;
 
-                            String msg = currency + " has down -" + dipDownThreshold + "%, it's trading time";
+                            String msg = currency + " has down -" + tradeConfig.dipDownThreshold + "%, it's trading time";
                             LINENotify.sendNotify(msg);
                         }
 
                         // If up 5%
-                        if (diffs > (dipUpThreshold / 10)) {
+                        if (diffs > (tradeConfig.dipUpThreshold / 10)) {
                             isTradeTime = true;
                             diffs = 0;
 
-                            String msg = currency + " has up +" + dipDownThreshold + "%, it's trading time";
+                            String msg = currency + " has up +" + tradeConfig.dipDownThreshold + "%, it's trading time";
                             LINENotify.sendNotify(msg);
                         }
                     }
@@ -192,7 +189,7 @@ public class TraderSession implements Runnable {
 
         // Notice profit
         double profit = dollarBalance - 1000;
-        LINENotify.sendNotify("Total profit at now: " + profit + "USDT");
+        LINENotify.sendNotify("Total profit for " + currency +" at now: " + profit + "USDT");
     }
 
     public void stop() {
@@ -200,5 +197,15 @@ public class TraderSession implements Runnable {
         ws.abort();
         timer.cancel();
         timer.purge();
+    }
+
+    @Builder
+    public static class TradeConfig {
+        public double dipDownThreshold;
+        public double dipUpThreshold;
+        public double denyDipDown;
+        public double startToBuy;
+        public double stopLoss;
+        public double takeProfit;
     }
 }
