@@ -10,6 +10,7 @@ import java.util.TimerTask;
 import java.util.concurrent.CompletionStage;
 
 import com.google.gson.Gson;
+import com.tuhuynh.tradebot.AppFactory;
 import com.tuhuynh.tradebot.entities.binance.AggTradeStreamMsg;
 import com.tuhuynh.tradebot.linebot.LINENotify;
 
@@ -17,7 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class WatchSession implements Runnable {
-    private final Gson gson = new Gson();
+    private final Timer timer = new Timer();
+    private final Gson gson = AppFactory.getGson();
 
     private WebSocket ws = null;
 
@@ -64,7 +66,7 @@ public class WatchSession implements Runnable {
                             listener)
                 .join();
 
-        new Timer().scheduleAtFixedRate(new TimerTask(){
+        timer.scheduleAtFixedRate(new TimerTask(){
             @Override
             public void run(){
                 prices.add(price);
@@ -74,7 +76,7 @@ public class WatchSession implements Runnable {
             }
         }, 0, 1000);
 
-        new Timer().scheduleAtFixedRate(new TimerTask(){
+        timer.scheduleAtFixedRate(new TimerTask(){
             @Override
             public void run(){
                 if (prices.size() < 10) {
@@ -89,7 +91,7 @@ public class WatchSession implements Runnable {
             }
         }, 0, 1000);
 
-        new Timer().scheduleAtFixedRate(new TimerTask(){
+        timer.scheduleAtFixedRate(new TimerTask(){
             @Override
             public void run(){
                 if (diffs > (threshold / 10) || diffs < -(threshold / 10)) {
@@ -106,5 +108,7 @@ public class WatchSession implements Runnable {
     public void stop() {
         ws.sendClose(0, "None");
         ws.abort();
+        timer.cancel();
+        timer.purge();
     }
 }
