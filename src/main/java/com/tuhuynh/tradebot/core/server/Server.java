@@ -1,4 +1,4 @@
-package com.tuhuynh.tradebot.server;
+package com.tuhuynh.tradebot.core.server;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -13,7 +13,7 @@ import com.google.gson.Gson;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
-import com.tuhuynh.tradebot.AppFactory;
+import com.tuhuynh.tradebot.factory.AppFactory;
 
 import lombok.Builder;
 import lombok.Getter;

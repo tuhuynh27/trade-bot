@@ -1,4 +1,4 @@
-package com.tuhuynh.tradebot;
+package com.tuhuynh.tradebot.factory;
 
 import com.google.gson.Gson;
 

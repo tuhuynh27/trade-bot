@@ -1,4 +1,4 @@
-package com.tuhuynh.tradebot.session;
+package com.tuhuynh.tradebot.watcher;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -10,7 +10,7 @@ import java.util.TimerTask;
 import java.util.concurrent.CompletionStage;
 
 import com.google.gson.Gson;
-import com.tuhuynh.tradebot.AppFactory;
+import com.tuhuynh.tradebot.factory.AppFactory;
 import com.tuhuynh.tradebot.entities.binance.AggTradeStreamMsg;
 import com.tuhuynh.tradebot.linebot.LINENotify;
 

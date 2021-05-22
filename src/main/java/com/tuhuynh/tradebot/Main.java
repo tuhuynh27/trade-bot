@@ -1,6 +1,6 @@
 package com.tuhuynh.tradebot;
 
-import com.tuhuynh.tradebot.app.WatcherApp;
+import com.tuhuynh.tradebot.watcher.WatcherApp;
 
 public class Main {
     public static void main(String[] args) throws InterruptedException {

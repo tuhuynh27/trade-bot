@@ -1,4 +1,4 @@
-package com.tuhuynh.tradebot.app;
+package com.tuhuynh.tradebot.watcher;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -9,11 +9,10 @@ import java.util.stream.Collectors;
 
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
-import com.tuhuynh.tradebot.AppFactory;
-import com.tuhuynh.tradebot.server.Server;
-import com.tuhuynh.tradebot.server.Server.Context;
-import com.tuhuynh.tradebot.server.Server.HttpResponse;
-import com.tuhuynh.tradebot.session.WatchSession;
+import com.tuhuynh.tradebot.factory.AppFactory;
+import com.tuhuynh.tradebot.core.server.Server;
+import com.tuhuynh.tradebot.core.server.Server.Context;
+import com.tuhuynh.tradebot.core.server.Server.HttpResponse;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
