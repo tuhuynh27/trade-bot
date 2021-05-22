@@ -3,21 +3,21 @@ package com.tuhuynh.tradebot.watcher;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
-import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.LinkedBlockingDeque;
 
 import com.google.gson.Gson;
-import com.tuhuynh.tradebot.factory.AppFactory;
 import com.tuhuynh.tradebot.entities.binance.AggTradeStreamMsg;
+import com.tuhuynh.tradebot.factory.AppFactory;
 import com.tuhuynh.tradebot.linebot.LINENotify;
 
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class WatchSession implements Runnable {
+public class WatcherSession implements Runnable {
     private final Timer timer = new Timer();
     private final Gson gson = AppFactory.getGson();
 
@@ -27,10 +27,10 @@ public class WatchSession implements Runnable {
     private final float threshold;
 
     private double price = 0.0F;
-    private final Deque<Double> prices = new ArrayDeque<>();
+    private final Deque<Double> prices = new LinkedBlockingDeque<>();
     private double diffs = 0.0F;
 
-    public WatchSession(String currency, float threshold) {
+    public WatcherSession(String currency, float threshold) {
         this.currency = currency;
         this.threshold = threshold;
     }
@@ -85,6 +85,9 @@ public class WatchSession implements Runnable {
 
                 try {
                     double diff = ((prices.getLast() / prices.getFirst()) - 1);
+                    if (Double.isInfinite(diff)) {
+                        return;
+                    }
                     diffs += diff;
                 } catch (RuntimeException ignored) {
                 }
@@ -94,6 +97,10 @@ public class WatchSession implements Runnable {
         timer.scheduleAtFixedRate(new TimerTask(){
             @Override
             public void run(){
+                if (prices.size() < 10) {
+                    return;
+                }
+
                 if (diffs > (threshold / 10) || diffs < -(threshold / 10)) {
                     String percentage = (diffs > 0 ? "+" : "-") + threshold + "%";
                     String msg = currency + " has just modified " + percentage + ", current price is " + price;

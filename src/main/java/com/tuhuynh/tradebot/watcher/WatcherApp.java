@@ -21,7 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 public class WatcherApp implements Runnable {
     private final Gson gson = AppFactory.getGson();
     private ExecutorService executorService = null;
-    private List<WatchSession> watchSessions;
+    private List<WatcherSession> watcherSessions;
 
     private ArrayList<WatchItem> listWatch = new ArrayList<>(Arrays.asList(
             new WatchItem("ETH", 5F),
@@ -47,14 +47,14 @@ public class WatcherApp implements Runnable {
 
     public void initWatchers() {
         executorService = Executors.newCachedThreadPool();
-        watchSessions = listWatch.stream()
-                                 .map(w -> new WatchSession(w.currency, w.threshold))
-                                 .collect(Collectors.toList());
-        watchSessions.forEach(executorService::submit);
+        watcherSessions = listWatch.stream()
+                                   .map(w -> new WatcherSession(w.currency, w.threshold))
+                                   .collect(Collectors.toList());
+        watcherSessions.forEach(executorService::submit);
     }
 
     public void terminateWatchers() {
-        watchSessions.forEach(WatchSession::stop);
+        watcherSessions.forEach(WatcherSession::stop);
         executorService.shutdownNow();
     }
 
