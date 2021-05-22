@@ -36,11 +36,12 @@ public class TraderSession implements Runnable {
     private double coinBalance = 0;
 
     // Metrics
-    private final double dipThreshold = 0.2D;
-    private final double denyDip = 0.05D;
+    private final double dipDownThreshold = 0.1D;
+    private final double dipUpThreshold = 0.1D;
+    private final double denyDipDown = 0.1D;
     private final double startToBuy = 0.05D;
     private final double stopLoss = 0.1D;
-    private final double takeProfile = 0.5D;
+    private final double takeProfit = 0.5D;
 
     public TraderSession(String currency) {
         this.currency = currency;
@@ -114,7 +115,7 @@ public class TraderSession implements Runnable {
 
                 if (isHolding) {
                     // If up 5%
-                    if (diffs > (takeProfile / 10)) {
+                    if (diffs > (takeProfit / 10)) {
                         sellAll(price);
                         diffs = 0;
 
@@ -130,6 +131,7 @@ public class TraderSession implements Runnable {
                         String msg = "Stop loss activated for " + currency;
                         LINENotify.sendNotify(msg);
                     }
+
                 } else {
                     if (isTradeTime) {
                         // If up 2%
@@ -137,26 +139,33 @@ public class TraderSession implements Runnable {
                             buyAll(price);
                             isTradeTime = false;
                             diffs = 0;
-
-                            String msg = currency + " has up +" + startToBuy + "% after the dip time, it's time to buy";
-                            LINENotify.sendNotify(msg);
                         }
 
                         // If still down 2%
-                        if (diffs < -(denyDip / 10)) {
+                        if (diffs < -(denyDipDown / 10)) {
                             isTradeTime = false;
                             diffs = 0;
 
-                            String msg = currency + " has still down more -" + denyDip + "%, close trading time";
+                            String msg = currency + " has still down more -" + denyDipDown
+                                         + "%, close trading time";
                             LINENotify.sendNotify(msg);
                         }
                     } else {
                         // If down 5%
-                        if (diffs < -(dipThreshold / 10)) {
+                        if (diffs < -(dipDownThreshold / 10)) {
                             isTradeTime = true;
                             diffs = 0;
 
-                            String msg = currency + " has down -" + dipThreshold + "%, it's trading time";
+                            String msg = currency + " has down -" + dipDownThreshold + "%, it's trading time";
+                            LINENotify.sendNotify(msg);
+                        }
+
+                        // If up 5%
+                        if (diffs > (dipUpThreshold / 10)) {
+                            isTradeTime = true;
+                            diffs = 0;
+
+                            String msg = currency + " has up +" + dipDownThreshold + "%, it's trading time";
                             LINENotify.sendNotify(msg);
                         }
                     }
@@ -169,16 +178,21 @@ public class TraderSession implements Runnable {
         coinBalance = (dollarBalance / price) - (dollarBalance / price) * 0.001;
         dollarBalance = 0;
         isHolding = true;
-        String msg = "Paid " + coinBalance + "at price " + price;
+        String msg = "Bought " + coinBalance + currency + " at price " + price;
         LINENotify.sendNotify(msg);
     }
 
     public void sellAll(double price) {
+        double numOfSold = coinBalance;
         dollarBalance = (coinBalance * price) - (coinBalance * price) * 0.001;
         coinBalance = 0;
         isHolding = false;
-        String msg = "Sold " + coinBalance + "at price " + price + ", balance is " + dollarBalance;
+        String msg = "Sold " + numOfSold + currency + " at price " + price + ", balance is " + dollarBalance + "USDT";
         LINENotify.sendNotify(msg);
+
+        // Notice profit
+        double profit = dollarBalance - 1000;
+        LINENotify.sendNotify("Total profit at now: " + profit + "USDT");
     }
 
     public void stop() {
