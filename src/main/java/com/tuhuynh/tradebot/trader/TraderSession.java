@@ -33,6 +33,7 @@ public class TraderSession implements Runnable {
     // Trade Vars
     private boolean isTradeTime = false;
     private boolean isHolding = false;
+    private double initialDollarBalance;
     private double dollarBalance;
     private double coinBalance = 0;
 
@@ -43,6 +44,8 @@ public class TraderSession implements Runnable {
         this.currency = currency;
         this.dollarBalance = balance;
         this.tradeConfig = tradeConfig;
+
+        this.initialDollarBalance = balance;
 
         TraderFactory.modifyDollarBalance(balance);
     }
@@ -192,7 +195,7 @@ public class TraderSession implements Runnable {
         LINENotify.sendNotify(msg);
 
         // Notice profit
-        double profit = dollarBalance - 1000;
+        double profit = dollarBalance - initialDollarBalance;
         TraderFactory.setProfit(currency, profit);
         LINENotify.sendNotify("Total profit for " + currency +" for now: " + profit + "USDT" + " (" + (profit / 10) + "%)");
     }
