@@ -19,13 +19,10 @@ public class LINENotify {
     @Getter
     private static final ArrayList<String> notifyLogs = new ArrayList<>();
 
+    @SneakyThrows
     public static void sendNotify(String msg) {
         log.info("LINE Notify: " + msg);
         notifyLogs.add(msg);
-    }
-
-    @SneakyThrows
-    public static void callLINEAPI(String msg) {
         HttpClient httpClient = HttpClient.newBuilder()
                                           .version(Version.HTTP_1_1)
                                           .connectTimeout(Duration.ofSeconds(10))

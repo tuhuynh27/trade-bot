@@ -3,9 +3,16 @@ package com.tuhuynh.tradebot.trader;
 import java.util.Map;
 import java.util.TreeMap;
 
+import com.tuhuynh.tradebot.trader.TraderSession.TraderConfig;
+
 import lombok.Getter;
+import lombok.Setter;
 
 public class TraderFactory {
+    @Getter
+    @Setter
+    private static TraderConfig traderConfig;
+
     @Getter
     private static double dollarBalance = 0;
 
