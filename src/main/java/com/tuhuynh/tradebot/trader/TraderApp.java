@@ -19,12 +19,12 @@ public class TraderApp implements Runnable {
     public void run() {
         // Init set defaultTraderConfig or read from configuration or persis file
         TraderConfig traderConfig = TraderConfig.builder()
-                                                .downThreshold(0.45) // 1D == 1%
-                                                .upThreshold(0.2)
-                                                .denyThreshold(0.155)
-                                                .buyPoint(0.2)
+                                                .downThreshold(0.12) // 1D == 1%
+                                                .upThreshold(0.12)
+                                                .denyThreshold(0.2)
+                                                .buyPoint(0.225)
                                                 .stopLoss(0.25)
-                                                .takeProfit(0.85)
+                                                .takeProfit(0.8)
                                                 .build();
         TraderFactory.setTraderConfig(traderConfig);
 

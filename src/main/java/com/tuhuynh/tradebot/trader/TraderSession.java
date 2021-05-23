@@ -42,6 +42,7 @@ public class TraderSession implements Runnable {
     // Risk/Leverage Vars
     private double leveragePoint = 1;
     private int stopLossContinue = 0;
+    private int takeProfitContinue = 0;
 
     // Configs
     private final TraderConfig traderConfig = TraderFactory.getTraderConfig();
@@ -128,7 +129,7 @@ public class TraderSession implements Runnable {
                     return;
                 }
 
-                if (stopLossContinue >= 3) {
+                if (stopLossContinue >= 2) {
                     // Risk
                     return;
                 }
@@ -136,10 +137,11 @@ public class TraderSession implements Runnable {
                 if (isHolding) {
                     // If up 5%
                     // Take profit
-                    if (diffs > (traderConfig.getTakeProfit() / 10)) {
+                    if (diffs > (traderConfig.getTakeProfit() * leveragePoint / 10)) {
                         String msg = "Take profit activated for " + currency;
                         traderLogger.logMsg(msg);
 
+                        takeProfitContinue += 1;
                         sellAll(price);
                         diffs = 0;
                         stopLossContinue = 0;
@@ -148,47 +150,47 @@ public class TraderSession implements Runnable {
                     // If down 1%
                     // Stop loss
                     if (diffs < -(traderConfig.getStopLoss() * leveragePoint / 10)) {
-                        String msg = "Stop loss activated for " + currency + ", it loss " + (stopLossContinue + 1) + " times in a row";
-                        traderLogger.logMsg(msg);
-
                         stopLossContinue += 1;
+                        String msg = "Stop loss activated for " + currency + ", it loss " + stopLossContinue + " times in a row";
+                        traderLogger.logMsg(msg);
                         sellAll(price);
                         diffs = 0;
+                        takeProfitContinue = 0;
                     }
                 } else {
                     if (isTradeTime) {
                         // If up 2%
-                        if (diffs > ((traderConfig.getBuyPoint() * leveragePoint) / 10)) {
+                        if (diffs > ((traderConfig.getBuyPoint()) / leveragePoint / 10)) {
                             buyAll(price);
                             isTradeTime = false;
                             diffs = 0;
                         }
 
                         // If still down 2%
-                        if (diffs < -(traderConfig.getDenyThreshold() * leveragePoint / 10)) {
+                        if (diffs < -(traderConfig.getDenyThreshold() / 10)) {
                             isTradeTime = false;
                             diffs = 0;
 
-                            String msg = currency + " continue to down -" + traderConfig.getDenyThreshold() * leveragePoint
+                            String msg = currency + " continue to down -" + traderConfig.getDenyThreshold()
                                          + "%, close trading time";
                             traderLogger.logMsg(msg);
                         }
                     } else {
                         // If down 5%
-                        if (diffs < -(traderConfig.getDownThreshold() * leveragePoint / 10)) {
+                        if (diffs < -(traderConfig.getDownThreshold() / 10)) {
                             isTradeTime = true;
                             diffs = 0;
 
-                            String msg = currency + " has down -" + traderConfig.getDownThreshold() * leveragePoint + "%, open trading time";
+                            String msg = currency + " has down -" + traderConfig.getDownThreshold() + "%, open trading time";
                             traderLogger.logMsg(msg);
                         }
 
                         // If up 5%
-                        if (diffs > (traderConfig.getUpThreshold() * leveragePoint / 10)) {
+                        if (diffs > (traderConfig.getUpThreshold() / leveragePoint / 10)) {
                             isTradeTime = true;
                             diffs = 0;
 
-                            String msg = currency + " has up +" + traderConfig.getUpThreshold() * leveragePoint + "%, open trading time";
+                            String msg = currency + " has up +" + traderConfig.getUpThreshold() + "%, open trading time";
                             traderLogger.logMsg(msg);
                         }
                     }
@@ -223,34 +225,26 @@ public class TraderSession implements Runnable {
 
         // Check profit threshold
         leveragePoint = 1;
-        if (profitPercentage > 1) {
-            leveragePoint = 0.75;
-        }
-        if (profitPercentage > 2.5) {
-            leveragePoint = 0.5;
-        }
-        if (profitPercentage > 5) {
-            leveragePoint = 0.3;
-        }
-
-        if (profitPercentage < -1) {
+        if (takeProfitContinue > 1) {
             leveragePoint = 1.5;
         }
-        if (profitPercentage < -2.5) {
+        if (takeProfitContinue > 2) {
             leveragePoint = 2;
         }
-        if (profitPercentage < -5) {
-            leveragePoint = 2.5;
+        if (takeProfitContinue > 3) {
+            leveragePoint = 3;
         }
-
+        if (takeProfitContinue > 4) {
+            leveragePoint = 3.5;
+        }
         if (leveragePoint != 1) {
             traderLogger.logMsg("Leverage point for " + currency + " has just been adjusted to " + leveragePoint);
         }
 
         // Check risk
-        if (stopLossContinue >= 3 || profitPercentage < -7.5) {
-            stopLossContinue = 3;
-            traderLogger.logMsg(currency + " has lost 3 times in a row, stopped trading for 2 minutes");
+        if (stopLossContinue >= 2 || profitPercentage < -7.5) {
+            stopLossContinue = 2;
+            traderLogger.logMsg(currency + " has lost 3 times in a row, stopped trading for 5 minutes");
             // Too risk to continue, pause
             timer.schedule(new TimerTask() {
                 @Override
@@ -258,7 +252,7 @@ public class TraderSession implements Runnable {
                     stopLossContinue -= 1;
                     traderLogger.logMsg("Resume trading for " + currency);
                 }
-            }, 120_000); // 2 minutes
+            }, 300_000); // 5 minutes
         }
     }
 
