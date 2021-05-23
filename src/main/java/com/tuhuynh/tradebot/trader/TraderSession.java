@@ -43,6 +43,8 @@ public class TraderSession implements Runnable {
         this.currency = currency;
         this.dollarBalance = balance;
         this.tradeConfig = tradeConfig;
+
+        TraderFactory.modifyDollarBalance(balance);
     }
 
     @Override
@@ -143,7 +145,7 @@ public class TraderSession implements Runnable {
                             isTradeTime = false;
                             diffs = 0;
 
-                            String msg = currency + " has still down more -" + tradeConfig.denyDipDown
+                            String msg = currency + " continue to down -" + tradeConfig.denyDipDown
                                          + "%, close trading time";
                             LINENotify.sendNotify(msg);
                         }
@@ -153,7 +155,7 @@ public class TraderSession implements Runnable {
                             isTradeTime = true;
                             diffs = 0;
 
-                            String msg = currency + " has down -" + tradeConfig.dipDownThreshold + "%, it's trading time";
+                            String msg = currency + " has down -" + tradeConfig.dipDownThreshold + "%, open trading time";
                             LINENotify.sendNotify(msg);
                         }
 
@@ -162,7 +164,7 @@ public class TraderSession implements Runnable {
                             isTradeTime = true;
                             diffs = 0;
 
-                            String msg = currency + " has up +" + tradeConfig.dipDownThreshold + "%, it's trading time";
+                            String msg = currency + " has up +" + tradeConfig.dipDownThreshold + "%, open trading time";
                             LINENotify.sendNotify(msg);
                         }
                     }
@@ -172,6 +174,7 @@ public class TraderSession implements Runnable {
     }
 
     public void buyAll(double price) {
+        TraderFactory.modifyDollarBalance(-dollarBalance);
         coinBalance = (dollarBalance / price) - (dollarBalance / price) * 0.001;
         dollarBalance = 0;
         isHolding = true;
@@ -182,6 +185,7 @@ public class TraderSession implements Runnable {
     public void sellAll(double price) {
         double numOfSold = coinBalance;
         dollarBalance = (coinBalance * price) - (coinBalance * price) * 0.001;
+        TraderFactory.modifyDollarBalance(dollarBalance);
         coinBalance = 0;
         isHolding = false;
         String msg = "Sold " + numOfSold + currency + " at price " + price + ", balance is " + dollarBalance + "USDT";
@@ -189,7 +193,8 @@ public class TraderSession implements Runnable {
 
         // Notice profit
         double profit = dollarBalance - 1000;
-        LINENotify.sendNotify("Total profit for " + currency +" at now: " + profit + "USDT");
+        TraderFactory.setProfit(currency, profit);
+        LINENotify.sendNotify("Total profit for " + currency +" for now: " + profit + "USDT" + " (" + (profit / 10) + "%)");
     }
 
     public void stop() {

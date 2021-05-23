@@ -1,0 +1,19 @@
+{
+  "apps":[
+    {
+      "name":"binance-trader",
+      "cwd":".",
+      "script":"/usr/bin/java",
+      "args":[
+        "-jar",
+        "/root/trade/tradebot.jar"
+      ],
+      "watch":[
+        "/root/trade/tradebot.jar"
+      ],
+      "log_date_format":"YYYY-MM-DD HH:mm Z",
+      "exec_interpreter":"",
+      "exec_mode":"fork"
+    }
+  ]
+}

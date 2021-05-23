@@ -8,15 +8,21 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayList;
 
+import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class LINENotify {
+    @Getter
+    private static final ArrayList<String> notifyLogs = new ArrayList<>();
+
     @SneakyThrows
     public static void sendNotify(String msg) {
         log.info("LINE Notify: " + msg);
+        notifyLogs.add(msg);
         HttpClient httpClient = HttpClient.newBuilder()
                                           .version(Version.HTTP_1_1)
                                           .connectTimeout(Duration.ofSeconds(10))
