@@ -9,6 +9,7 @@ import java.util.TimerTask;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.LinkedBlockingDeque;
 
+import com.google.common.collect.Queues;
 import com.google.gson.Gson;
 import com.tuhuynh.tradebot.entities.binance.AggTradeStreamMsg;
 import com.tuhuynh.tradebot.factory.AppFactory;
@@ -24,7 +25,7 @@ public class TraderSession implements Runnable {
     private final Timer timer = new Timer();
     private final Gson gson = AppFactory.getGson();
     private final String currency;
-    private final Deque<Double> prices = new LinkedBlockingDeque<>();
+    private final Deque<Double> prices = Queues.newLinkedBlockingDeque();
     private final double initialDollarBalance;
     // Configs
     private final TraderConfig traderConfig = TraderFactory.getTraderConfig();
@@ -32,6 +33,7 @@ public class TraderSession implements Runnable {
     private double price = 0.0F;
     private double diffs = 0.0F;
     // Trade Vars
+    private boolean isSuspending = false;
     private boolean isTradeTime = false;
     private boolean isHolding = false;
     private double dollarBalance;
@@ -40,8 +42,11 @@ public class TraderSession implements Runnable {
     private double leveragePoint = 1;
     private int stopLossContinue = 0;
     private int takeProfitContinue = 0;
+    // Events
+    private final Events events;
 
-    public TraderSession(String currency, double balance) {
+
+    public TraderSession(String currency, double balance, Events events) {
         this.traderLogger = new TraderLogger(currency);
 
         this.currency = currency;
@@ -49,6 +54,8 @@ public class TraderSession implements Runnable {
         this.initialDollarBalance = balance;
 
         TraderFactory.modifyDollarBalance(balance);
+
+        this.events = events;
     }
 
     @Override
@@ -56,7 +63,7 @@ public class TraderSession implements Runnable {
         WebSocket.Listener listener = new WebSocket.Listener() {
             @Override
             public void onOpen(WebSocket webSocket) {
-                traderLogger.logMsg("Connected to " + currency + " stream, started trading");
+                traderLogger.logMsg("Connected to " + currency + " stream");
                 WebSocket.Listener.super.onOpen(webSocket);
             }
 
@@ -123,7 +130,7 @@ public class TraderSession implements Runnable {
                     return;
                 }
 
-                if (stopLossContinue >= 2) {
+                if (isSuspending || stopLossContinue >= 3) {
                     // Risk
                     return;
                 }
@@ -243,18 +250,21 @@ public class TraderSession implements Runnable {
         }
 
         // Check risk
-        if (stopLossContinue >= 2 || profitPercentage < -7.5) {
-            stopLossContinue = 2;
-            traderLogger.logMsg(currency + " has lost 3 times in a row, stopped trading for 5 minutes");
-            // Too risk to continue, pause
-            timer.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    stopLossContinue -= 1;
-                    traderLogger.logMsg("Resume trading for " + currency);
-                }
-            }, 300_000); // 5 minutes
+        if (stopLossContinue >= 3 || profitPercentage < -7.5) {
+            traderLogger.logMsg(currency + " has lost 3 times in a row, switch trading strategy");
+            events.losingHandler();
+            stopLossContinue = 0;
         }
+    }
+
+    public void stopTrade() {
+        traderLogger.logMsg("Stopped trade for " + currency);
+        isSuspending = true;
+    }
+
+    public void resumeTrade() {
+        traderLogger.logMsg("Resumed trade for " + currency);
+        isSuspending = false;
     }
 
     public void stop() {
@@ -262,6 +272,11 @@ public class TraderSession implements Runnable {
         ws.abort();
         timer.cancel();
         timer.purge();
+    }
+
+    @FunctionalInterface
+    interface Events {
+        void losingHandler();
     }
 
     @Builder

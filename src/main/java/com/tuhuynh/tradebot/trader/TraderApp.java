@@ -29,46 +29,11 @@ public class TraderApp implements Runnable {
 
         long startTime = System.currentTimeMillis();
 
-        new Thread(new TraderSession("ETHDOWN", 100)).start();
-        new Thread(new TraderSession("ETHUP", 100)).start();
-        new Thread(new TraderSession("BTCDOWN", 100)).start();
-        new Thread(new TraderSession("BTCUP", 100)).start();
-        new Thread(new TraderSession("BNBDOWN", 100)).start();
-        new Thread(new TraderSession("BNBUP", 100)).start();
-        new Thread(new TraderSession("XRPDOWN", 100)).start();
-        new Thread(new TraderSession("XRPUP", 100)).start();
-        new Thread(new TraderSession("ADADOWN", 100)).start();
-        new Thread(new TraderSession("ADAUP", 100)).start();
-        new Thread(new TraderSession("DOTUP", 100)).start();
-        new Thread(new TraderSession("DOTDOWN", 100)).start();
-        new Thread(new TraderSession("BCHDOWN", 100)).start();
-        new Thread(new TraderSession("XLMDOWN", 100)).start();
-
-        new Thread(new TraderSession("BTC", 100)).start();
-        new Thread(new TraderSession("ETH", 100)).start();
-        new Thread(new TraderSession("XRP", 100)).start();
-        new Thread(new TraderSession("BNB", 100)).start();
-        new Thread(new TraderSession("DOGE", 100)).start();
-
-        new Thread(new TraderSession("XLM", 100)).start();
-        new Thread(new TraderSession("ADA", 100)).start();
-        new Thread(new TraderSession("BAKE", 100)).start();
-        new Thread(new TraderSession("AXS", 100)).start();
-        new Thread(new TraderSession("SHIB", 100)).start();
-        new Thread(new TraderSession("ONT", 100)).start();
-        new Thread(new TraderSession("MATIC", 100)).start();
-        new Thread(new TraderSession("ICP", 100)).start();
-        new Thread(new TraderSession("DOT", 100)).start();
-        new Thread(new TraderSession("SOL", 100)).start();
-        new Thread(new TraderSession("LTC", 100)).start();
-        new Thread(new TraderSession("VET", 100)).start();
-        new Thread(new TraderSession("ETC", 100)).start();
-        new Thread(new TraderSession("BCH", 100)).start();
-        new Thread(new TraderSession("LINK", 100)).start();
-        new Thread(new TraderSession("XVS", 100)).start();
-        new Thread(new TraderSession("NEAR", 100)).start();
-        new Thread(new TraderSession("WIN", 100)).start();
-        new Thread(new TraderSession("EOS", 100)).start();
+        new Thread(new TraderPair("BTC", 1000)).start();
+        new Thread(new TraderPair("ETH", 1000)).start();
+        new Thread(new TraderPair("ADA", 1000)).start();
+        new Thread(new TraderPair("BNB", 1000)).start();
+        new Thread(new TraderPair("XRP", 1000)).start();
 
         double initialBalance = TraderFactory.getDollarBalance();
 
