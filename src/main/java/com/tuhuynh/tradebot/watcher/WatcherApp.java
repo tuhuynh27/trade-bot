@@ -10,12 +10,11 @@ import java.util.stream.Collectors;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.tuhuynh.tradebot.factory.AppFactory;
-import com.tuhuynh.tradebot.core.server.Server;
-import com.tuhuynh.tradebot.core.server.Server.Context;
-import com.tuhuynh.tradebot.core.server.Server.HttpResponse;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Mono;
+import reactor.netty.http.server.HttpServer;
 
 @Slf4j
 public class WatcherApp implements Runnable {
@@ -31,18 +30,16 @@ public class WatcherApp implements Runnable {
     @Override
     public void run() {
         initWatchers();
-        Server server = Server.create("localhost", 1234);
 
-        server.use("/watch/list", (Context context) -> HttpResponse.builder().body(listWatch).code(200).build());
-
-        server.use("/watch/setup", (Context context) -> {
-            listWatch = gson.fromJson(context.getBody(), new TypeToken<List<WatchItem>>(){}.getType());
-            terminateWatchers();
-            initWatchers();
-            return HttpResponse.builder().body(listWatch).code(200).build();
-        });
-
-        server.start();
+        HttpServer.create().port(1234).route(routes -> {
+            routes.get("/watch/list", (req, res) -> res.sendString(Mono.just(gson.toJson(listWatch))));
+            routes.post("/watch/setup", (req, res) -> res.sendString(req.receive().asString().map(body -> {
+                listWatch = gson.fromJson(body, new TypeToken<List<WatchItem>>(){}.getType());
+                terminateWatchers();
+                initWatchers();
+                return gson.toJson(listWatch);
+            })));
+        }).bindNow();
     }
 
     public void initWatchers() {

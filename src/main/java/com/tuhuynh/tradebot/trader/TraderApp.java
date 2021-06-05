@@ -3,14 +3,13 @@ package com.tuhuynh.tradebot.trader;
 import java.util.List;
 
 import com.google.gson.Gson;
-import com.tuhuynh.tradebot.core.server.Server;
-import com.tuhuynh.tradebot.core.server.Server.Context;
-import com.tuhuynh.tradebot.core.server.Server.HttpResponse;
 import com.tuhuynh.tradebot.factory.AppFactory;
 import com.tuhuynh.tradebot.trader.TraderLogger.TraderLog;
 import com.tuhuynh.tradebot.trader.TraderSession.TraderConfig;
 
 import lombok.AllArgsConstructor;
+import reactor.core.publisher.Mono;
+import reactor.netty.http.server.HttpServer;
 
 public class TraderApp implements Runnable {
     private final Gson gson = AppFactory.getGson();
@@ -73,54 +72,58 @@ public class TraderApp implements Runnable {
 
         double initialBalance = TraderFactory.getDollarBalance();
 
-        Server server = Server.create("localhost", 6789);
+        HttpServer.create().port(6789).route(routes -> {
+            routes.get("/trade/config/get", (req, res) ->
+                    res.sendString(Mono.just(gson.toJson(TraderFactory.getTraderConfig()))));
 
-        server.use("/trade/config/get", (Context context) -> HttpResponse.builder()
-                                                                         .body(TraderFactory.getTraderConfig())
-                                                                         .code(200).build());
+            routes.post("/trade/config/set", (req, res) ->
+                    res.sendString(req.receive().asString().map(body -> {
+                        TraderConfig t = gson.fromJson(body, TraderConfig.class);
+                        TraderConfig s = TraderFactory.getTraderConfig();
+                        s.setDownThreshold(t.getDownThreshold());
+                        s.setUpThreshold(t.getUpThreshold());
+                        s.setDenyThreshold(t.getDenyThreshold());
+                        s.setBuyPoint(t.getBuyPoint());
+                        s.setStopLoss(t.getStopLoss());
+                        s.setTakeProfit(t.getTakeProfit());
+                        return gson.toJson(s);
+                    }))
+            );
 
-        server.use("/trade/config/set", (Context context) -> {
-            String bodyString = context.getBody();
-            TraderConfig t = gson.fromJson(bodyString, TraderConfig.class);
-            TraderConfig s = TraderFactory.getTraderConfig();
-            s.setDownThreshold(t.getDownThreshold());
-            s.setUpThreshold(t.getUpThreshold());
-            s.setDenyThreshold(t.getDenyThreshold());
-            s.setBuyPoint(t.getBuyPoint());
-            s.setStopLoss(t.getStopLoss());
-            s.setTakeProfit(t.getTakeProfit());
-            return HttpResponse.builder().body(s).code(200).build();
-        });
+            routes.get("/trade/logs/get", (req, res) -> {
+                List<TraderLog> logTail = TraderLogger.getNotifyLogs()
+                                                      .subList(Math.max(
+                                                              TraderLogger.getNotifyLogs().size() - 50, 0),
+                                                               TraderLogger.getNotifyLogs().size());
+                return res.sendString(Mono.just(gson.toJson(logTail)));
+            });
 
-        server.use("/trade/logs/get", (Context context) -> {
-            List<TraderLog> logTail = TraderLogger.getNotifyLogs()
-                                                  .subList(Math.max(TraderLogger.getNotifyLogs().size() - 50, 0),
-                                                           TraderLogger.getNotifyLogs().size());
-            return HttpResponse.builder().body(logTail).code(200).build();
-        });
-
-        server.use("/trade/logs/rate", (Context context) -> {
-            int win = (int) TraderLogger.getNotifyLogs().stream().filter(l -> l.msg.startsWith("Take profit"))
-                                          .count();
-            int lose = (int) TraderLogger.getNotifyLogs().stream().filter(l -> l.msg.startsWith("Stop loss"))
-                                          .count();
-            return HttpResponse.builder().body(new Rate(win, lose)).code(200).build();
-        });
-
-        server.use("/trade/info/get", (Context context) -> {
-            List<TraderLog> notifyLogs = TraderLogger.getNotifyLogs();
-            long txCount = notifyLogs.stream()
-                                             .filter(l -> l.msg.startsWith("Bought ") || l.msg.startsWith("Sold "))
+            routes.get("/trade/logs/rate", (req, res) -> {
+                int win = (int) TraderLogger.getNotifyLogs().stream()
+                                            .filter(l -> l.msg.startsWith("Take profit"))
+                                            .count();
+                int lose = (int) TraderLogger.getNotifyLogs().stream()
+                                             .filter(l -> l.msg.startsWith("Stop loss"))
                                              .count();
-            InvestmentData result = new InvestmentData(startTime, initialBalance, TraderFactory.getDollarBalance(),
-                                                       txCount, TraderFactory.getProfit());
-            return HttpResponse.builder().body(result).code(200).build();
-        });
+                String winRate = gson.toJson(new Rate(win, lose));
+                return res.sendString(Mono.just(winRate));
+            });
 
-        server.use("/trade/profit-table/get", (Context context) ->
-                HttpResponse.builder().body(TraderFactory.getProfitTable()).code(200).build());
+            routes.get("/trade/info/get", (req, res) -> {
+                List<TraderLog> notifyLogs = TraderLogger.getNotifyLogs();
+                long txCount = notifyLogs.stream()
+                                         .filter(l ->l.msg.startsWith("Bought ") || l.msg.startsWith("Sold "))
+                                         .count();
+                InvestmentData result = new InvestmentData(startTime, initialBalance,
+                                                           TraderFactory.getDollarBalance(),
+                                                           txCount, TraderFactory.getProfit());
+                return res.sendString(Mono.just(gson.toJson(result)));
+            });
 
-        server.start();
+            routes.get("/trade/profit-table/get", (req, res) ->
+                    res.sendString(Mono.just(gson.toJson(TraderFactory.getProfitTable()))));
+
+        }).bindNow();
     }
 
     @AllArgsConstructor
