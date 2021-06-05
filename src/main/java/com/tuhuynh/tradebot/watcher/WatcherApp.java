@@ -34,7 +34,7 @@ public class WatcherApp implements Runnable {
         HttpServer.create().port(1234).route(routes -> {
             routes.get("/watch/list", (req, res) -> res.sendString(Mono.just(gson.toJson(listWatch))));
             routes.post("/watch/setup", (req, res) -> res.sendString(req.receive().asString().map(body -> {
-                listWatch = gson.fromJson(body, new TypeToken<List<WatchItem>>(){}.getType());
+                listWatch = gson.fromJson(body, new TypeToken<List<WatchItem>>() {}.getType());
                 terminateWatchers();
                 initWatchers();
                 return gson.toJson(listWatch);

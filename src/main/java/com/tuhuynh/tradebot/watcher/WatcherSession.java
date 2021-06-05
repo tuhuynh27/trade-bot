@@ -20,14 +20,11 @@ import lombok.extern.slf4j.Slf4j;
 public class WatcherSession implements Runnable {
     private final Timer timer = new Timer();
     private final Gson gson = AppFactory.getGson();
-
-    private WebSocket ws = null;
-
     private final String currency;
     private final float threshold;
-
-    private double price = 0.0F;
     private final Deque<Double> prices = new LinkedBlockingDeque<>();
+    private WebSocket ws = null;
+    private double price = 0.0F;
     private double diffs = 0.0F;
 
     public WatcherSession(String currency, float threshold) {
@@ -66,9 +63,9 @@ public class WatcherSession implements Runnable {
                             listener)
                 .join();
 
-        timer.scheduleAtFixedRate(new TimerTask(){
+        timer.scheduleAtFixedRate(new TimerTask() {
             @Override
-            public void run(){
+            public void run() {
                 prices.add(price);
                 if (prices.size() > 10) {
                     prices.removeFirst();
@@ -76,9 +73,9 @@ public class WatcherSession implements Runnable {
             }
         }, 0, 1000);
 
-        timer.scheduleAtFixedRate(new TimerTask(){
+        timer.scheduleAtFixedRate(new TimerTask() {
             @Override
-            public void run(){
+            public void run() {
                 if (prices.size() < 10) {
                     return;
                 }
@@ -94,9 +91,9 @@ public class WatcherSession implements Runnable {
             }
         }, 0, 1000);
 
-        timer.scheduleAtFixedRate(new TimerTask(){
+        timer.scheduleAtFixedRate(new TimerTask() {
             @Override
-            public void run(){
+            public void run() {
                 if (prices.size() < 10) {
                     return;
                 }

@@ -1,8 +1,8 @@
 package com.tuhuynh.tradebot.trader;
 
 import java.util.Map;
-import java.util.TreeMap;
 
+import com.google.common.collect.Maps;
 import com.tuhuynh.tradebot.trader.TraderSession.TraderConfig;
 
 import lombok.Getter;
@@ -10,14 +10,12 @@ import lombok.Setter;
 
 public class TraderFactory {
     @Getter
+    private static final Map<String, Double> profitTable = Maps.newTreeMap();
+    @Getter
     @Setter
     private static TraderConfig traderConfig;
-
     @Getter
     private static double dollarBalance = 0;
-
-    @Getter
-    private static final Map<String, Double> profitTable = new TreeMap<>();
 
     public static void modifyDollarBalance(double toAdd) {
         dollarBalance += toAdd;

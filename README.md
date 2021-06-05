@@ -4,6 +4,7 @@
 
 - Watch & alert
 - High frequency crypto trading
+- Update configs via exposed REST API
 
 ## Run
 
@@ -16,4 +17,8 @@ sh build.sh
 ./tradebot
 ```
 
-Update configs via exposed RESTful API
+## Dependencies
+
+- Reactor Netty
+- Gson
+- Guava

@@ -112,7 +112,7 @@ public class TraderApp implements Runnable {
             routes.get("/trade/info/get", (req, res) -> {
                 List<TraderLog> notifyLogs = TraderLogger.getNotifyLogs();
                 long txCount = notifyLogs.stream()
-                                         .filter(l ->l.msg.startsWith("Bought ") || l.msg.startsWith("Sold "))
+                                         .filter(l -> l.msg.startsWith("Bought ") || l.msg.startsWith("Sold "))
                                          .count();
                 InvestmentData result = new InvestmentData(startTime, initialBalance,
                                                            TraderFactory.getDollarBalance(),
