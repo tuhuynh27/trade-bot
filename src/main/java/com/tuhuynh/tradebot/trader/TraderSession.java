@@ -1,5 +1,13 @@
 package com.tuhuynh.tradebot.trader;
 
+import com.google.gson.Gson;
+import com.tuhuynh.tradebot.entities.binance.AggTradeStreamMsg;
+import com.tuhuynh.tradebot.factory.AppFactory;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.WebSocket;
@@ -9,23 +17,13 @@ import java.util.TimerTask;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.LinkedBlockingDeque;
 
-import com.google.common.collect.Queues;
-import com.google.gson.Gson;
-import com.tuhuynh.tradebot.entities.binance.AggTradeStreamMsg;
-import com.tuhuynh.tradebot.factory.AppFactory;
-
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
-
 @Slf4j
 public class TraderSession implements Runnable {
     private final TraderLogger traderLogger;
     private final Timer timer = new Timer();
     private final Gson gson = AppFactory.getGson();
     private final String currency;
-    private final Deque<Double> prices = Queues.newLinkedBlockingDeque();
+    private final Deque<Double> prices = new LinkedBlockingDeque<>();
     private final double initialDollarBalance;
     // Configs
     private final TraderConfig traderConfig = TraderFactory.getTraderConfig();
@@ -45,7 +43,6 @@ public class TraderSession implements Runnable {
     // Events
     private final Events events;
 
-
     public TraderSession(String currency, double balance, Events events) {
         this.traderLogger = new TraderLogger(currency);
 
@@ -60,6 +57,8 @@ public class TraderSession implements Runnable {
 
     @Override
     public void run() {
+        String connectStr = currency.toLowerCase() + "usdt@aggTrade";
+
         WebSocket.Listener listener = new WebSocket.Listener() {
             @Override
             public void onOpen(WebSocket webSocket) {
@@ -83,11 +82,17 @@ public class TraderSession implements Runnable {
             @Override
             public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
                 traderLogger.logMsg("Closed on stream of " + currency + ", reason: " + reason);
+                traderLogger.logMsg("Reconnecting...");
+                ws = HttpClient
+                        .newHttpClient()
+                        .newWebSocketBuilder()
+                        .buildAsync(URI.create("wss://stream.binance.com:9443/stream?streams=" + connectStr), this)
+                        .join();
+                traderLogger.logMsg("Reconnected");
                 return WebSocket.Listener.super.onClose(webSocket, statusCode, reason);
             }
         };
 
-        String connectStr = currency.toLowerCase() + "usdt@aggTrade";
         ws = HttpClient
                 .newHttpClient()
                 .newWebSocketBuilder()
@@ -108,20 +113,18 @@ public class TraderSession implements Runnable {
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                if (prices.size() < 10) {
-                    return;
-                }
-
-                try {
-                    double diff = ((prices.getLast() / prices.getFirst()) - 1);
-                    if (Double.isInfinite(diff)) {
-                        return;
+                if (prices.size() >= 10) {
+                    try {
+                        double diff = ((prices.getLast() / prices.getFirst()) - 1);
+                        if (Double.isInfinite(diff)) {
+                            return;
+                        }
+                        diffs += diff;
+                    } catch (RuntimeException ignored) {
                     }
-                    diffs += diff;
-                } catch (RuntimeException ignored) {
                 }
             }
-        }, 0, 100);
+        }, 10, 100);
 
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
@@ -200,7 +203,7 @@ public class TraderSession implements Runnable {
                     }
                 }
             }
-        }, 0, 100);
+        }, 20, 100);
     }
 
     public void buyAll(double price) {

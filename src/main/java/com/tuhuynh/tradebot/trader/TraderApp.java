@@ -32,8 +32,6 @@ public class TraderApp implements Runnable {
         new Thread(new TraderPair("BTC", 1000)).start();
         new Thread(new TraderPair("ETH", 1000)).start();
         new Thread(new TraderPair("ADA", 1000)).start();
-        new Thread(new TraderPair("BNB", 1000)).start();
-        new Thread(new TraderPair("XRP", 1000)).start();
 
         double initialBalance = TraderFactory.getDollarBalance();
 
